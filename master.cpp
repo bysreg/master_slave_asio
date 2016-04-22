@@ -2,9 +2,6 @@
 #include <iostream>
 
 #include "master.hpp"
-#include "message.hpp"
-
-using namespace std;
 
 void Master::start() 
 {
@@ -13,7 +10,7 @@ void Master::start()
 	static boost::asio::io_service io_service;
 	static Master master(io_service);
 
-	cout<<"starting master server..."<<endl;
+	std::cout<<"starting master server..."<<std::endl;
 
 	boost::thread t(boost::bind(&Master::run, &master));
 }
@@ -32,74 +29,78 @@ void Master::run()
 
 void Master::start_accept() 
 {
-	Connection::pointer new_conn = 
-		Connection::create(acceptor.get_io_service());
+	// Connection::pointer new_conn = 
+	// 	Connection::create(acceptor.get_io_service());
 
-	acceptor.async_accept(new_conn->socket(), 
-		boost::bind(&Master::handle_accept, this, new_conn,
+	// accepting incoming connection that want to connect with the 
+	// master
+	acceptor.async_accept(socket, 
+		boost::bind(&Master::handle_accept, this,
 			boost::asio::placeholders::error));
 }
 
-void Master::handle_accept(Connection::pointer new_conn, 
-	const boost::system::error_code& error) 
+void Master::handle_accept(const boost::system::error_code& error) 
 {
 	if(error) {
-		cerr << "error!! " << error << endl;		
+		std::cerr << "error!! " << error << std::endl;		
 	}else{
 		// for now, always send ACK
 		//send_ack(new_conn);
-		send_helloworld(new_conn);
+		//send_helloworld(new_conn);
+
+		std::make_shared<Connection>(std::move(socket))->start();
+		
 	}
 
 	start_accept();
 }
 
-void Master::send_complete(const boost::system::error_code& /*error*/,
-	  size_t /*bytes_transferred*/)
-{	
-} 
+// void Master::send_complete(const boost::system::error_code& /*error*/,
+// 	  size_t /*bytes_transferred*/)
+// {	
+// } 
 
-void Master::send_helloworld(Connection::pointer connection)
-{	
-	send(connection, "2helloworld!!\n");
-}
+// void Master::send_helloworld(Connection::pointer connection)
+// {	
+// 	send(connection, "2helloworld!!\n");
+// }
 
-void Master::send_ack(Connection::pointer connection)
-{
-	send(connection, static_cast<char>(0));	
-}
+// void Master::send_ack(Connection::pointer connection)
+// {
+// 	send(connection, static_cast<char>(0));	
+// }
 
-void Master::send(Connection::pointer connection, char code)
-{
-	char buf[1];
-	buf[1] = code;
-	boost::asio::async_write(connection->socket(), 
-		boost::asio::buffer(buf), 
-		boost::bind(&Master::send_complete, 
-			this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
-}
+// void Master::send(Connection::pointer connection, char code)
+// {
+// 	char buf[1];
+// 	buf[1] = code;
+// 	boost::asio::async_write(connection->socket(), 
+// 		boost::asio::buffer(buf), 
+// 		boost::bind(&Master::send_complete, 
+// 			this,
+// 			boost::asio::placeholders::error,
+// 			boost::asio::placeholders::bytes_transferred));
+// }
 
-void Master::send(Connection::pointer connection, const string& str)
-{
-	Message msg;
-	msg.set_body_length(str.length());
-	std::memcpy(msg.body(), str.c_str(), str.length());
-	msg.encode_header();
+// void Master::send(Connection::pointer connection, const string& str)
+// {
+// 	Message msg;
+// 	msg.set_body_length(str.length());
+// 	std::memcpy(msg.body(), str.c_str(), str.length());
+// 	msg.encode_header();
 
-	send(connection, msg);	
-}
+// 	send(connection, msg);	
+// }
 
-void Master::send(Connection::pointer connection, const Message& msg)
-{
-	boost::asio::async_write(connection->socket(), 
-		boost::asio::buffer(msg.data(), msg.length()), 
-		boost::bind(&Master::send_complete, 
-			this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
-}
+// void Master::send(Connection::pointer connection, const Message& msg)
+// {
+// 	boost::asio::async_write(connection->socket(), 
+// 		boost::asio::buffer(msg.data(), msg.length()), 
+// 		boost::bind(&Master::send_complete, 
+// 			this,
+// 			boost::asio::placeholders::error,
+// 			boost::asio::placeholders::bytes_transferred));
+// }
 
 int main() 
 {
