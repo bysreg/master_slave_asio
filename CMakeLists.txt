@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
+if(WIN32)
+	set(Boost_USE_STATIC_LIBS ON)
+	set(Boost_USE_MULTITHREADED ON)
+endif()
 
 find_package(Boost COMPONENTS system thread date_time regex chrono REQUIRED)
 
