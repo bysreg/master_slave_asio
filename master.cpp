@@ -1,3 +1,4 @@
+#include <boost/thread/thread.hpp>
 #include "master.hpp"
 
 void Connection::start()
@@ -94,7 +95,10 @@ void Master::start()
 
 	static Master master(io_service);
 
-	io_service.run();
+	std::cout<<"starting master..."<<std::endl;
+
+	boost::thread t(boost::bind(&boost::asio::io_service::run,
+		&io_service));
 }
 
 void Master::do_accept()
@@ -115,7 +119,10 @@ int main(int argc, char* argv[])
 {
 	try
 	{
-		Master::start();    
+		Master::start();  
+
+		while(true) {};
+
 	}
 	catch (std::exception& e)
 	{
