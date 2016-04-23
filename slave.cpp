@@ -22,8 +22,7 @@ void Slave::start(const std::string& host)
 }
 
 void Slave::stop()
-{
-}
+{}
 
 void Slave::run(boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 {
