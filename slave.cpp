@@ -103,6 +103,7 @@ void Slave::do_write()
 			}
 			else
 			{
+				std::cout<<"something is wrong"<<std::endl;
 				socket.close();
 			}
 		});
