@@ -17,9 +17,7 @@ private:
 	typedef std::deque<Message*> MessageQueue;
 
 public:
-	Connection(tcp::socket socket)
-	: socket_(std::move(socket))
-	{}
+	Connection(tcp::socket socket);	
 
 	void start();
 private:
@@ -30,9 +28,9 @@ private:
 	void do_read_body();
 	void do_write();
 
-	tcp::socket socket_;
-	Message read_msg_;
-	MessageQueue write_msgs_;
+	tcp::socket socket;
+	Message read_msg;
+	MessageQueue write_msgs;
 };
 
 class Master
@@ -40,19 +38,15 @@ class Master
 private:
 	typedef boost::asio::ip::tcp tcp;
 
-public:
-	Master(boost::asio::io_service& io_service)
-	: acceptor_(io_service, tcp::endpoint(tcp::v4(), 50000)),
-	socket_(io_service)
-	{
-		do_accept();
-	}
+public:	
+
+	Master(boost::asio::io_service& io_service);
 
 	static void start();
 
 private:
 	void do_accept();
 
-	tcp::acceptor acceptor_;
-	tcp::socket socket_;
+	tcp::acceptor acceptor;
+	tcp::socket socket;
 };

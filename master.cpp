@@ -1,6 +1,13 @@
 #include <boost/thread/thread.hpp>
 #include "master.hpp"
 
+static const int read_msg_max_length = 1440000; 
+static const int write_msg_max_length = 1000;
+
+Connection::Connection(boost::asio::ip::tcp::socket socket_)
+	: socket(std::move(socket_)), read_msg(read_msg_max_length)
+{}
+
 void Connection::start()
 {
 	std::cout<<"a connection started"<<std::endl;
@@ -13,7 +20,7 @@ void Connection::send(const std::string& str)
 {
 	// std::cout<<"trying to send a string"<<std::endl;
 
-	Message* msg = new Message;
+	Message* msg = new Message(write_msg_max_length);
 
 	msg->set_body_length(str.length());
 	std::memcpy(msg->body(), str.c_str(), str.length());
@@ -23,8 +30,8 @@ void Connection::send(const std::string& str)
 
 void Connection::send(Message* msg)
 {
-	bool write_in_progress = !write_msgs_.empty();
-	write_msgs_.push_back(msg);
+	bool write_in_progress = !write_msgs.empty();
+	write_msgs.push_back(msg);
 	if (!write_in_progress)
 	{
 		do_write();
@@ -36,19 +43,19 @@ void Connection::do_write()
 	// std::cout<<"trying to call write"<<std::endl;
 
 	auto self(shared_from_this());
-	boost::asio::async_write(socket_,
-		boost::asio::buffer(write_msgs_.front()->data(),
-		write_msgs_.front()->length()),
+	boost::asio::async_write(socket,
+		boost::asio::buffer(write_msgs.front()->data(),
+		write_msgs.front()->length()),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
 			{
 				//delete the recent sent message
-				Message* sent = write_msgs_.front();
+				Message* sent = write_msgs.front();
 				delete sent;
 
-				write_msgs_.pop_front();
-				if (!write_msgs_.empty())
+				write_msgs.pop_front();
+				if (!write_msgs.empty())
 				{
 					do_write();
 				}
@@ -65,11 +72,11 @@ void Connection::do_read_header()
 	// std::cout<<"trying to call read header"<<std::endl;
 
 	auto self(shared_from_this());
-	boost::asio::async_read(socket_,
-		boost::asio::buffer(read_msg_.data(), Message::header_length),
+	boost::asio::async_read(socket,
+		boost::asio::buffer(read_msg.data(), Message::header_length),
 			[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
-			if (!ec && read_msg_.decode_header())
+			if (!ec && read_msg.decode_header())
 			{
 				do_read_body();
 			}
@@ -84,13 +91,13 @@ void Connection::do_read_body()
 {
 	// std::cout<<"trying to call read body"<<std::endl;
 	auto self(shared_from_this());
-	boost::asio::async_read(socket_,
-		boost::asio::buffer(read_msg_.body(), read_msg_.body_length()),
+	boost::asio::async_read(socket,
+		boost::asio::buffer(read_msg.body(), read_msg.body_length()),
 			[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
 			{
-				std::cout.write(read_msg_.body(), read_msg_.body_length());
+				std::cout.write(read_msg.body(), read_msg.body_length());
 				std::cout << "\n";
 
 				do_read_header();
@@ -100,6 +107,13 @@ void Connection::do_read_body()
 					//something is wrong
 			}
 		});
+}
+
+Master::Master(boost::asio::io_service& io_service)
+	: acceptor(io_service, tcp::endpoint(tcp::v4(), 50000)),
+	socket(io_service)
+{
+	do_accept();
 }
 
 void Master::start()
@@ -116,12 +130,12 @@ void Master::start()
 
 void Master::do_accept()
 {
-	acceptor_.async_accept(socket_,
+	acceptor.async_accept(socket,
 		[this](boost::system::error_code ec)
 		{
 			if (!ec)
 			{
-				std::make_shared<Connection>(std::move(socket_))->start();
+				std::make_shared<Connection>(std::move(socket))->start();
 			}
 
 			do_accept();

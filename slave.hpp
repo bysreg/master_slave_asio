@@ -21,12 +21,7 @@ public:
 
 
 	Slave(boost::asio::io_service& io_service, 
-		tcp::resolver::iterator endpoint_iterator)
-		: io_service(io_service), 
-		  socket(io_service)
-	{
-
-	}
+		tcp::resolver::iterator endpoint_iterator);	
 
 	// communications
 	void send_anjing();

@@ -1,19 +1,34 @@
 #pragma once
 
+#include <iostream>
+
 class Message
 {
 
 public:
 	static const int header_length = 4;
-	static const int max_body_length = 200;
+	const int max_body_length;
 
-	Message() : body_length_(0)
-	{}
+	// constructor
+	Message(int max_body_length) 
+		: body_length_(0), max_body_length(max_body_length)
+	{
+		// std::cout<<"Message::Message()"<<std::endl;
+		data_ = new char[header_length + max_body_length];
+	}
 
+	// destructor
 	~Message()
 	{
-
+		// std::cout<<"Message::~Message()"<<std::endl;
+		delete[] data_;
 	}
+
+	// copy constructor
+	Message(const Message& msg) = delete;
+
+	// copy assignment operator
+	Message& operator= (const Message& other) = delete;
 
 	inline const char* data() const
 	{
@@ -74,7 +89,6 @@ public:
 
 
 private:
-	char data_[header_length + max_body_length];
+	char* data_;
 	int body_length_;
-
 };	
