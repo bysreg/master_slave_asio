@@ -152,12 +152,22 @@ void Master::do_accept()
 		{
 			if (!ec)
 			{
-				std::make_shared<Connection>(std::move(socket))->start();
+				auto conn_ptr = std::make_shared<Connection>(std::move(socket));
+				this->connections.insert(conn_ptr);
+
+				conn_ptr->start();
 			}
 
 			do_accept();
 		});
 }
+
+// void Master::send_all(Message* msg)
+// {
+// 	for (auto connection: connections) {
+// 		connections->send(msg);
+// 	}
+// }
 
 int main(int argc, char* argv[])
 {

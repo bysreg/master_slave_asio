@@ -6,6 +6,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <deque>
 #include <iostream>
+#include <set>
 
 #include "message.hpp"
 
@@ -43,6 +44,8 @@ private:
 	MessageQueue write_msgs;
 };
 
+typedef std::shared_ptr<Connection> ConnectionPtr;
+
 class Master
 {
 private:
@@ -54,9 +57,14 @@ public:
 
 	static void start();
 
+	// void send_all(const std::string& str);
+	// void send_all(Message* msg);
+
 private:
 	void do_accept();
 
 	tcp::acceptor acceptor;
 	tcp::socket socket;
+
+	std::set<ConnectionPtr> connections;
 };
