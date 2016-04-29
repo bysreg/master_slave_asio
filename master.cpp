@@ -12,7 +12,7 @@ void Connection::start()
 {
 	std::cout<<"a connection started"<<std::endl;
 
-	send("hello fucker");
+	send("hello world");
 	do_read_header();
 }
 
