@@ -58,6 +58,16 @@ public:
 
 	static Master& start();	
 
+	template<typename T>
+	void send_all(const T& value) {
+		MessagePtr msg =  std::make_shared<Message>(sizeof(T));
+
+		msg->set_body_length(sizeof(T));
+		std::memcpy(msg->body(), &value, sizeof(T));
+		msg->encode_header();
+		send_all(msg);	
+	}
+
 	void send_all(const std::string& str);
 	void send_all(MessagePtr msg);
 

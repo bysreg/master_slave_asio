@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
 {
 	try
 	{
-		Master& master = Master::start();  
+		Master& master = Master::start();  		
 
 		while(true) 
 		{
@@ -191,6 +191,11 @@ int main(int argc, char* argv[])
 			std::cin>>s;
 
 			master.send_all(s);
+
+			// test send struct to all
+			Test t;
+			t.a = 'x';t.b = 'y';t.c = 'z';
+			master.send_all(t);
 		};
 
 	}
