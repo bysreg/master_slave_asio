@@ -22,6 +22,16 @@ public:
 	void start();
 private:
 
+	template<typename T>
+	void send(const T& value) {
+		Message* msg = new Message(sizeof(T));
+
+		msg->set_body_length(sizeof(T));
+		std::memcpy(msg->body(), &value, sizeof(T));
+		msg->encode_header();
+		send(msg);
+	}
+
 	void send(const std::string& str);
 	void send(Message* msg);
 	void do_read_header();

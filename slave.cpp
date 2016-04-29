@@ -96,13 +96,14 @@ void Slave::do_read_body()
 		});
 }
 
-void Slave::send_anjing()
+void Slave::send(const std::string& str)
 {
-	Message* msg = new Message(write_msg_max_length);
-	std::string anjing = "anjing";
+	// std::cout<<"trying to send a string"<<std::endl;
 
-	msg->set_body_length(anjing.length());
-	std::memcpy(msg->body(), anjing.c_str(), anjing.length());
+	Message* msg = new Message(str.length());
+
+	msg->set_body_length(str.length());
+	std::memcpy(msg->body(), str.c_str(), str.length());
 	msg->encode_header();
 	send(msg);
 }
@@ -148,10 +149,24 @@ void Slave::do_write()
 		});
 }
 
+struct Test {
+	char a;
+	char b;
+	char c;
+	char d;
+	Test() {
+		a = 'a';
+		b = 'n';
+		c = 'j';
+		d = 'i';
+	}
+};
 
 void Slave::process_message(const Message& message)
 {
-	send_anjing();
+	//send("anjing");
+	Test test;
+	send(test);
 }
 
 int main() 

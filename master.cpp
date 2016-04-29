@@ -8,11 +8,28 @@ Connection::Connection(boost::asio::ip::tcp::socket socket_)
 	: socket(std::move(socket_)), read_msg(read_msg_max_length)
 {}
 
+struct Test {
+	char a;
+	char b;
+	char c;
+	char d;
+	Test() {
+		a = 'h';
+		b = 'i';
+		c = 'l';
+		d = 'm';
+	}
+};
+
 void Connection::start()
 {
 	std::cout<<"a connection started"<<std::endl;
 
-	send("hello world");
+	Test test;
+	send(test);
+
+	//send("hello world");
+
 	do_read_header();
 }
 
@@ -20,7 +37,7 @@ void Connection::send(const std::string& str)
 {
 	// std::cout<<"trying to send a string"<<std::endl;
 
-	Message* msg = new Message(write_msg_max_length);
+	Message* msg = new Message(str.length());
 
 	msg->set_body_length(str.length());
 	std::memcpy(msg->body(), str.c_str(), str.length());
