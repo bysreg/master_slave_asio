@@ -35,9 +35,7 @@ void Connection::start()
 
 void Connection::send(const std::string& str)
 {
-	// std::cout<<"trying to send a string"<<std::endl;
-
-	Message* msg = new Message(str.length());
+	MessagePtr msg = std::make_shared<Message>(str.length());
 
 	msg->set_body_length(str.length());
 	std::memcpy(msg->body(), str.c_str(), str.length());
@@ -45,7 +43,7 @@ void Connection::send(const std::string& str)
 	send(msg);
 }
 
-void Connection::send(Message* msg)
+void Connection::send(MessagePtr msg)
 {
 	bool write_in_progress = !write_msgs.empty();
 	write_msgs.push_back(msg);
@@ -68,8 +66,8 @@ void Connection::do_write()
 			if (!ec)
 			{
 				//delete the recent sent message
-				Message* sent = write_msgs.front();
-				delete sent;
+				// Message* sent = write_msgs.front();
+				// delete sent;
 
 				write_msgs.pop_front();
 				if (!write_msgs.empty())
@@ -133,7 +131,7 @@ Master::Master(boost::asio::io_service& io_service)
 	do_accept();
 }
 
-void Master::start()
+Master& Master::start()
 {
 	static boost::asio::io_service io_service;
 
@@ -143,6 +141,8 @@ void Master::start()
 
 	boost::thread t(boost::bind(&boost::asio::io_service::run,
 		&io_service));
+
+	return master;
 }
 
 void Master::do_accept()
@@ -162,20 +162,36 @@ void Master::do_accept()
 		});
 }
 
-// void Master::send_all(Message* msg)
-// {
-// 	for (auto connection: connections) {
-// 		connections->send(msg);
-// 	}
-// }
+void Master::send_all(const std::string& str)
+{
+	MessagePtr msg = std::make_shared<Message>(str.length());
+
+	msg->set_body_length(str.length());
+	std::memcpy(msg->body(), str.c_str(), str.length());
+	msg->encode_header();
+	send_all(msg);	
+}
+
+void Master::send_all(MessagePtr msg)
+{
+	for (auto connection: connections) {
+		connection->send(msg);
+	}
+}
 
 int main(int argc, char* argv[])
 {
 	try
 	{
-		Master::start();  
+		Master& master = Master::start();  
 
-		while(true) {};
+		while(true) 
+		{
+			std::string s;
+			std::cin>>s;
+
+			master.send_all(s);
+		};
 
 	}
 	catch (std::exception& e)

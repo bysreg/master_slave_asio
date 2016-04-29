@@ -92,3 +92,5 @@ private:
 	char* data_;
 	int body_length_;
 };	
+
+typedef std::shared_ptr<Message> MessagePtr;
