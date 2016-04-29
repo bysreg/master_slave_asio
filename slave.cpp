@@ -97,6 +97,16 @@ void Slave::do_read_body()
 		});
 }
 
+void Slave::send(const unsigned char* chars, int size)
+{
+	Message* msg = new Message(size);
+
+	msg->set_body_length(size);
+	std::memcpy(msg->body(), chars, size);
+	msg->encode_header();
+	send(msg);
+}
+
 void Slave::send(const std::string& str)
 {
 	// std::cout<<"trying to send a string"<<std::endl;
@@ -180,14 +190,16 @@ int main()
 {
 	std::string localhost = "localhost";
 	Slave& slave = Slave::start(localhost);
+	const unsigned char test_char_arr[4] = {'y', 'o', 'l', 'o'};
 
 	slave.set_on_message_received(
-		[&slave](const Message& msg) {
+		[&slave, &test_char_arr](const Message& msg) {
 			std::cout<<"receive : ";
 			std::cout.write(msg.body(), msg.body_length());
 			std::cout << "\n";
 
-			slave.send("anjing");
+			//slave.send("anjing");
+			slave.send(test_char_arr, 4);
 		}
 	);
 
