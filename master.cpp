@@ -108,7 +108,7 @@ void Connection::do_read_body()
 	auto self(shared_from_this());
 	boost::asio::async_read(socket,
 		boost::asio::buffer(read_msg.body(), read_msg.body_length()),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/)
+		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
 			{
@@ -119,7 +119,7 @@ void Connection::do_read_body()
 			}
 			else
 			{
-					//something is wrong
+				//something is wrong
 			}
 		});
 }
