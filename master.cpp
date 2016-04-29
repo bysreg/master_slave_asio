@@ -3,21 +3,25 @@
 
 void Connection::start()
 {
+	std::cout<<"a connection started"<<std::endl;
+
 	send("hello fucker");
 	do_read_header();
 }
 
 void Connection::send(const std::string& str)
 {
-	Message msg;
+	// std::cout<<"trying to send a string"<<std::endl;
 
-	msg.set_body_length(str.length());
-	std::memcpy(msg.body(), str.c_str(), str.length());
-	msg.encode_header();
+	Message* msg = new Message;
+
+	msg->set_body_length(str.length());
+	std::memcpy(msg->body(), str.c_str(), str.length());
+	msg->encode_header();
 	send(msg);
 }
 
-void Connection::send(const Message& msg)
+void Connection::send(Message* msg)
 {
 	bool write_in_progress = !write_msgs_.empty();
 	write_msgs_.push_back(msg);
@@ -27,8 +31,39 @@ void Connection::send(const Message& msg)
 	}
 }
 
+void Connection::do_write()
+{
+	// std::cout<<"trying to call write"<<std::endl;
+
+	auto self(shared_from_this());
+	boost::asio::async_write(socket_,
+		boost::asio::buffer(write_msgs_.front()->data(),
+		write_msgs_.front()->length()),
+		[this, self](boost::system::error_code ec, std::size_t /*length*/)
+		{
+			if (!ec)
+			{
+				//delete the recent sent message
+				Message* sent = write_msgs_.front();
+				delete sent;
+
+				write_msgs_.pop_front();
+				if (!write_msgs_.empty())
+				{
+					do_write();
+				}
+			}
+			else
+			{
+					//something is wrong
+			}
+		});
+}
+
 void Connection::do_read_header()
 {
+	// std::cout<<"trying to call read header"<<std::endl;
+
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
 		boost::asio::buffer(read_msg_.data(), Message::header_length),
@@ -47,6 +82,7 @@ void Connection::do_read_header()
 
 void Connection::do_read_body()
 {
+	// std::cout<<"trying to call read body"<<std::endl;
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
 		boost::asio::buffer(read_msg_.body(), read_msg_.body_length()),
@@ -58,29 +94,6 @@ void Connection::do_read_body()
 				std::cout << "\n";
 
 				do_read_header();
-			}
-			else
-			{
-					//something is wrong
-			}
-		});
-}
-
-void Connection::do_write()
-{
-	auto self(shared_from_this());
-	boost::asio::async_write(socket_,
-		boost::asio::buffer(write_msgs_.front().data(),
-			write_msgs_.front().length()),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/)
-		{
-			if (!ec)
-			{
-				write_msgs_.pop_front();
-				if (!write_msgs_.empty())
-				{
-					do_write();
-				}
 			}
 			else
 			{

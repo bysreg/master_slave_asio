@@ -14,7 +14,7 @@ class Connection
 {
 private:
 	typedef boost::asio::ip::tcp tcp;
-	typedef std::deque<Message> MessageQueue;
+	typedef std::deque<Message*> MessageQueue;
 
 public:
 	Connection(tcp::socket socket)
@@ -25,7 +25,7 @@ public:
 private:
 
 	void send(const std::string& str);
-	void send(const Message& msg);
+	void send(Message* msg);
 	void do_read_header();
 	void do_read_body();
 	void do_write();

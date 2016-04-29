@@ -46,41 +46,68 @@ void Slave::do_connect(tcp::resolver::iterator endpoint_iterator)
 
 void Slave::do_read_header()
 {
+	// async read the message header
 	boost::asio::async_read(socket,
-	boost::asio::buffer(read_msg.data(), Message::header_length),
-	[this](boost::system::error_code ec, std::size_t /*length*/)
-	{
-		if (!ec && read_msg.decode_header())
+		boost::asio::buffer(read_msg.data(), Message::header_length),
+		[this](boost::system::error_code ec, std::size_t /*length*/)
 		{
-			do_read_body();
-		}
-		else
-		{
-			socket.close();
-		}
-	});
+			if (!ec && read_msg.decode_header())
+			{
+				do_read_body();
+			}
+			else
+			{
+				socket.close();
+			}
+		});
 }
 
 void Slave::do_read_body()
 {
+	// async read the message body
 	boost::asio::async_read(socket,
-	boost::asio::buffer(read_msg.body(), read_msg.body_length()),
-	[this](boost::system::error_code ec, std::size_t /*length*/)
+		boost::asio::buffer(read_msg.body(), read_msg.body_length()),
+		[this](boost::system::error_code ec, std::size_t /*length*/)
+		{
+			if (!ec)
+			{
+				//printf("%.*s\n", read_msg.body_length(), read_msg.body());
+
+				std::cout.write(read_msg.body(), read_msg.body_length());
+				std::cout << "\n";
+				
+				process_message(read_msg);
+
+				do_read_header();
+			}
+			else
+			{
+				socket.close();
+			}
+		});
+}
+
+void Slave::send_anjing()
+{
+	Message* msg = new Message;
+	std::string anjing = "anjing";
+
+	msg->set_body_length(anjing.length());
+	std::memcpy(msg->body(), anjing.c_str(), anjing.length());
+	msg->encode_header();
+	send(msg);
+}
+
+void Slave::send(Message* msg)
+{
+	io_service.post(
+	[this, msg]()
 	{
-		if (!ec)
+		bool write_in_progress = !write_msgs.empty();
+		write_msgs.push_back(msg);
+		if (!write_in_progress)
 		{
-			//printf("%.*s\n", read_msg.body_length(), read_msg.body());
-
-			std::cout.write(read_msg.body(), read_msg.body_length());
-			std::cout << "\n";
-			
-			process_message(read_msg);
-
-			do_read_header();
-		}
-		else
-		{
-			socket.close();
+			do_write();
 		}
 	});
 }
@@ -88,12 +115,16 @@ void Slave::do_read_body()
 void Slave::do_write()
 {
 	boost::asio::async_write(socket,
-	boost::asio::buffer(write_msgs.front().data(),
-		write_msgs.front().length()),
+		boost::asio::buffer(write_msgs.front()->data(),
+		write_msgs.front()->length()),
 		[this](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
 			{
+				// delete the recent sent message
+				Message* sent = write_msgs.front();
+				delete sent;
+
 				write_msgs.pop_front();
 				if (!write_msgs.empty())
 				{
@@ -108,30 +139,6 @@ void Slave::do_write()
 		});
 }
 
-void Slave::send_anjing()
-{
-	Message msg;
-	std::string anjing = "anjing";
-
-	msg.set_body_length(anjing.length());
-	std::memcpy(msg.body(), anjing.c_str(), anjing.length());
-	msg.encode_header();
-	send(msg);
-}
-
-void Slave::send(const Message& msg)
-{
-	io_service.post(
-	[this, msg]()
-	{
-		bool write_in_progress = !write_msgs.empty();
-		write_msgs.push_back(msg);
-		if (!write_in_progress)
-		{
-			do_write();
-		}
-	});
-}
 
 void Slave::process_message(const Message& message)
 {
