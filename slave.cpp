@@ -83,12 +83,11 @@ void Slave::do_read_body()
 			if (!ec)
 			{
 				//printf("%.*s\n", read_msg.body_length(), read_msg.body());
-				std::cout<<"received : ";
-				std::cout.write(read_msg.body(), read_msg.body_length());
-				std::cout << "\n";
-				
-				process_message(read_msg);
+				// std::cout<<"received : ";
+				// std::cout.write(read_msg.body(), read_msg.body_length());
+				// std::cout << "\n";
 
+				process_message(read_msg);
 				do_read_header();
 			}
 			else
@@ -181,6 +180,10 @@ int main()
 
 	slave.set_on_message_received(
 		[&slave](const Message& msg) {
+			std::cout<<"receive : ";
+			std::cout.write(msg.body(), msg.body_length());
+			std::cout << "\n";
+			
 			slave.send("anjing");
 		}
 	);
