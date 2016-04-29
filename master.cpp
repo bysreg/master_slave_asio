@@ -14,7 +14,10 @@ void Connection::start()
 {
 	std::cout<<"a connection started"<<std::endl;
 
-	master.on_connection_started(*this);
+	if(master.on_connection_started) 
+	{
+		master.on_connection_started(*this);
+	}
 
 	do_read_header();
 }

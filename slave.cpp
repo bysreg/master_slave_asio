@@ -170,7 +170,10 @@ void Slave::set_on_message_received(std::function<void(const Message& message)> 
 
 void Slave::process_message(const Message& message)
 {
-	on_message_received(message);
+	if(on_message_received) 
+	{
+		on_message_received(message);
+	}
 }
 
 int main() 
@@ -183,7 +186,7 @@ int main()
 			std::cout<<"receive : ";
 			std::cout.write(msg.body(), msg.body_length());
 			std::cout << "\n";
-			
+
 			slave.send("anjing");
 		}
 	);
