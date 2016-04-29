@@ -15,7 +15,7 @@ Slave::Slave(boost::asio::io_service& io_service,
 	  socket(io_service), read_msg(read_msg_max_length)
 {}
 
-void Slave::start(const std::string& host) 
+Slave& Slave::start(const std::string& host) 
 {
 	using boost::asio::ip::tcp;
 
@@ -28,6 +28,8 @@ void Slave::start(const std::string& host)
 	static Slave slave(io_service, endpoint_iterator);	
 
 	boost::thread t(boost::bind(&Slave::run, &slave, endpoint_iterator));
+
+	return slave;
 }
 
 void Slave::stop()
@@ -81,7 +83,7 @@ void Slave::do_read_body()
 			if (!ec)
 			{
 				//printf("%.*s\n", read_msg.body_length(), read_msg.body());
-
+				std::cout<<"received : ";
 				std::cout.write(read_msg.body(), read_msg.body_length());
 				std::cout << "\n";
 				
@@ -162,17 +164,26 @@ struct Test {
 	}
 };
 
+void Slave::set_on_message_received(std::function<void(const Message& message)> const& cb)
+{
+	on_message_received = cb;
+}
+
 void Slave::process_message(const Message& message)
 {
-	//send("anjing");
-	Test test;
-	send(test);
+	on_message_received(message);
 }
 
 int main() 
 {
 	std::string localhost = "localhost";
-	Slave::start(localhost);
+	Slave& slave = Slave::start(localhost);
+
+	slave.set_on_message_received(
+		[&slave](const Message& msg) {
+			slave.send("anjing");
+		}
+	);
 
 	while(true) {}
 
