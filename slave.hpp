@@ -32,7 +32,6 @@ public:
 		send(msg);
 	}
 
-	// communications
 	void send(const unsigned char*, int size);
 	void send(const std::string& str);
 	void send(Message* message);

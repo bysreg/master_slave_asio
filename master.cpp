@@ -1,8 +1,8 @@
 #include <boost/thread/thread.hpp>
 #include "master.hpp"
 
-static const int read_msg_max_length = 1440000; 
-static const int write_msg_max_length = 1000;
+static const int read_msg_max_length = 800*600*3; 
+static const int write_msg_max_length = 800*600*3;
 
 Connection::Connection(boost::asio::ip::tcp::socket socket_, 
 	Master& master_)
@@ -20,6 +20,16 @@ void Connection::start()
 	}
 
 	do_read_header();
+}
+
+void Connection::send(const unsigned char* chars, int size)
+{
+	MessagePtr msg = std::make_shared<Message>(size);
+
+	msg->set_body_length(size);
+	std::memcpy(msg->body(), chars, size);
+	msg->encode_header();
+	send(msg);
 }
 
 void Connection::send(const std::string& str)
@@ -62,19 +72,19 @@ void Connection::do_write()
 			}
 			else
 			{
-					//something is wrong
+				//something is wrong
 			}
 		});
 }
 
 void Connection::do_read_header()
 {
-	// std::cout<<"trying to call read header"<<std::endl;
+	std::cout<<"trying to call read header"<<std::endl;
 
 	auto self(shared_from_this());
 	boost::asio::async_read(socket,
 		boost::asio::buffer(read_msg.data(), Message::header_length),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/)
+		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec && read_msg.decode_header())
 			{
@@ -82,14 +92,15 @@ void Connection::do_read_header()
 			}
 			else
 			{
-					// something is wrong
+				// something is wrong
+				std::cout<<"something is wrong "<<ec<<std::endl;
 			}
 		});
 }
 
 void Connection::do_read_body()
 {
-	// std::cout<<"trying to call read body"<<std::endl;
+	std::cout<<"trying to call read body"<<std::endl;
 	auto self(shared_from_this());
 	boost::asio::async_read(socket,
 		boost::asio::buffer(read_msg.body(), read_msg.body_length()),
@@ -99,13 +110,14 @@ void Connection::do_read_body()
 			{
 				// std::cout.write(read_msg.body(), read_msg.body_length());
 				// std::cout << "\n";
-
+				std::cout<<"receiving something"<<std::endl;
 				master.on_message_received(read_msg);
 				do_read_header();
 			}
 			else
 			{
-				//something is wrong
+				// something is wrong
+				std::cout<<"something is wrong "<<ec<<std::endl;
 			}
 		});
 }
@@ -188,21 +200,36 @@ struct Test {
 	}
 };
 
+void test_char_array(unsigned char* arr, int size)
+{
+	for(int i=0;i<size;i++)
+	{
+		arr[i] = (i % 10) + '0';
+		// std::cout<< arr[i];
+	}
+	// std::cout<<std::endl;
+}
+
 int main(int argc, char* argv[])
 {
 	try
 	{
+		const int size = 800*600*3;
+		unsigned char* big_char_arr = new unsigned char[size];
+		test_char_array(big_char_arr, size);
+
 		Master& master = Master::start();  		
 		master.set_on_message_received(
 			[&master](const Message& msg) {
-				std::cout<<"receive : ";
+				std::cout<<"receive ("<<msg.body_length()<<"):";
 				std::cout.write(msg.body(), msg.body_length());
 				std::cout << "\n";
 			}
 		);
 		master.set_on_connection_started(
-			[&master](Connection& connection) {
-				connection.send("hello world");
+			[&master, &big_char_arr, size](Connection& connection) {
+				connection.send(big_char_arr, size);
+				//connection.send("hello world");
 			}
 		);
 

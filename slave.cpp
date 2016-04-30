@@ -6,8 +6,8 @@
 #include <cstdlib>
 #include <boost/lexical_cast.hpp>
 
-static const int write_msg_max_length = 1440000;
-static const int read_msg_max_length = 1000;
+static const int write_msg_max_length = 800*600*3;
+static const int read_msg_max_length = 800*600*3;
 
 Slave::Slave(boost::asio::io_service& io_service, 
 	tcp::resolver::iterator endpoint_iterator)
@@ -186,20 +186,34 @@ void Slave::process_message(const Message& message)
 	}
 }
 
+void test_char_array(unsigned char* arr, int size)
+{
+	for(int i=0;i<size;i++)
+	{
+		arr[i] = (i % 10) + '0';
+		// std::cout<< arr[i];
+	}
+	// std::cout<<std::endl;
+}
+
 int main() 
 {
 	std::string localhost = "localhost";
 	Slave& slave = Slave::start(localhost);
-	const unsigned char test_char_arr[4] = {'y', 'o', 'l', 'o'};
+	const int size = 4;
+	unsigned char big_char_arr[size];
+	test_char_array(big_char_arr, size);
 
 	slave.set_on_message_received(
-		[&slave, &test_char_arr](const Message& msg) {
-			std::cout<<"receive : ";
+		[&slave, &big_char_arr, size](const Message& msg) {
+			std::cout<<"receive ("<<msg.body_length()<<"):";
 			std::cout.write(msg.body(), msg.body_length());
 			std::cout << "\n";
 
+			std::cout<<"receive ("<<msg.body_length()<<"<<<<" << std::endl;
+
 			//slave.send("anjing");
-			slave.send(test_char_arr, 4);
+			slave.send(big_char_arr, size);
 		}
 	);
 
