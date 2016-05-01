@@ -63,14 +63,14 @@ public:
 	inline bool decode_header()
 	{		
 		std::memcpy(&body_length_, data_, sizeof(body_length_));				
-		std::cout<<"body length is : " << body_length_<<std::endl;
+		// std::cout<<"body length is : " << body_length_<<std::endl;
 		if (body_length_ > max_body_length)
 		{
-			std::cout<<"message is not valid"<<std::endl;
+			// std::cout<<"message is not valid"<<std::endl;
 			body_length_ = 0;
 			return false;
 		}
-		std::cout<<"message is valid"<<std::endl;
+		// std::cout<<"message is valid"<<std::endl;
 		return true;
 	}
 

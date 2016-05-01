@@ -2,7 +2,7 @@
 #include "master.hpp"
 
 static const int read_msg_max_length = 800*600*3; 
-static const int write_msg_max_length = 800*600*3;
+static const int write_msg_max_length = 1000;
 
 Connection::Connection(boost::asio::ip::tcp::socket socket_, 
 	Master& master_)
@@ -79,7 +79,7 @@ void Connection::do_write()
 
 void Connection::do_read_header()
 {
-	std::cout<<"trying to call read header"<<std::endl;
+	// std::cout<<"trying to call read header"<<std::endl;
 
 	auto self(shared_from_this());
 	boost::asio::async_read(socket,
@@ -100,7 +100,8 @@ void Connection::do_read_header()
 
 void Connection::do_read_body()
 {
-	std::cout<<"trying to call read body"<<std::endl;
+	// std::cout<<"trying to call read body"<<std::endl;
+
 	auto self(shared_from_this());
 	boost::asio::async_read(socket,
 		boost::asio::buffer(read_msg.body(), read_msg.body_length()),
@@ -110,7 +111,7 @@ void Connection::do_read_body()
 			{
 				// std::cout.write(read_msg.body(), read_msg.body_length());
 				// std::cout << "\n";
-				std::cout<<"receiving something"<<std::endl;
+				std::cout<<"receiving something : ";
 				master.on_message_received(read_msg);
 				do_read_header();
 			}
@@ -220,16 +221,17 @@ int main(int argc, char* argv[])
 
 		Master& master = Master::start();  		
 		master.set_on_message_received(
-			[&master](const Message& msg) {
-				std::cout<<"receive ("<<msg.body_length()<<"):";
+			[&master](const Message& msg) {				
 				std::cout.write(msg.body(), msg.body_length());
 				std::cout << "\n";
+
+				std::cout<<"^^^ receive ("<<msg.body_length()<<")" << std::endl;
 			}
 		);
 		master.set_on_connection_started(
 			[&master, &big_char_arr, size](Connection& connection) {
-				connection.send(big_char_arr, size);
-				//connection.send("hello world");
+				// connection.send(big_char_arr, size);
+				connection.send("hello world");
 			}
 		);
 

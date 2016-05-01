@@ -17,6 +17,7 @@ public:
 	static Slave& start(const std::string& host);
 
 	// stop slave tcp 
+	// FIXME : not completed yet
 	static void stop();
 
 	Slave(boost::asio::io_service& io_service, 
@@ -36,6 +37,8 @@ public:
 	void send(const std::string& str);
 	void send(Message* message);
 
+	void run();
+
 	// callbacks
 	void set_on_message_received(std::function<void(const Message&)> const& cb);
 
@@ -44,11 +47,11 @@ private:
 	tcp::socket socket;
 	Message read_msg;
 	MessageQueue write_msgs;
+	tcp::resolver::iterator endpoint_iterator;
 
 	// callbacks
 	std::function<void(const Message&)> on_message_received;
-
-	void run(boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
+	
 	void do_connect(tcp::resolver::iterator endpoint_iterator);
 	void do_read_header();
 	void do_read_body();
