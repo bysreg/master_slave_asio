@@ -126,6 +126,8 @@ Master::Master(boost::asio::io_service& io_service)
 	: acceptor(io_service, tcp::endpoint(tcp::v4(), 50000)),
 	socket(io_service)
 {
+	connections.reserve(4);
+
 	do_accept();
 }
 
@@ -151,7 +153,7 @@ void Master::do_accept()
 			if (!ec)
 			{
 				auto conn_ptr = std::make_shared<Connection>(std::move(socket), *this);
-				this->connections.insert(conn_ptr);
+				this->connections.push_back(conn_ptr);
 
 				conn_ptr->start();
 			}
@@ -175,6 +177,11 @@ void Master::send_all(MessagePtr msg)
 	for (auto connection: connections) {
 		connection->send(msg);
 	}
+}
+
+void Master::send(int conn_idx, MessagePtr msg)
+{
+	connections[conn_idx]->send(msg);
 }
 
 int Master::get_connections_count() const
@@ -217,50 +224,45 @@ static void test_char_array(unsigned char* arr, int size)
 
 int main(int argc, char* argv[])
 {
-	try
+	const int size = 800*600*3;
+	unsigned char* big_char_arr = new unsigned char[size];
+	test_char_array(big_char_arr, size);
+
+	Master& master = Master::start();  		
+	master.set_on_message_received(
+		[&master](const Message& msg) {				
+			std::cout.write(msg.body(), msg.body_length());
+			std::cout << "\n";
+
+			std::cout<<"^^^ receive ("<<msg.body_length()<<")" << std::endl;
+		}
+	);
+	master.set_on_connection_started(
+		[&master, &big_char_arr, size](Connection& connection) {
+			// connection.send(big_char_arr, size);
+				
+			// first connection from a slave, 
+			// say hello world
+
+			connection.send("hello world");
+
+			// test send to connection index 0
+			master.send(0, "log a connection accepted");
+		}
+	);
+
+	while(true) 
 	{
-		const int size = 800*600*3;
-		unsigned char* big_char_arr = new unsigned char[size];
-		test_char_array(big_char_arr, size);
+		std::string s;
+		std::cin>>s;
 
-		Master& master = Master::start();  		
-		master.set_on_message_received(
-			[&master](const Message& msg) {				
-				std::cout.write(msg.body(), msg.body_length());
-				std::cout << "\n";
+		master.send_all(s);
 
-				std::cout<<"^^^ receive ("<<msg.body_length()<<")" << std::endl;
-			}
-		);
-		master.set_on_connection_started(
-			[&master, &big_char_arr, size](Connection& connection) {
-				// connection.send(big_char_arr, size);
-					
-				// first connection from a slave, 
-				// say hello world
-
-				connection.send("hello world");
-			}
-		);
-
-		while(true) 
-		{
-			std::string s;
-			std::cin>>s;
-
-			master.send_all(s);
-
-			// test send struct to all
-			Test t;
-			t.a = 'x';t.b = 'y';t.c = 'z';
-			master.send_all(t);
-		};
-
-	}
-	catch (std::exception& e)
-	{
-		std::cerr << "Exception: " << e.what() << "\n";
-	}
-
+		// test send struct to all
+		Test t;
+		t.a = 'x';t.b = 'y';t.c = 'z';
+		master.send_all(t);
+	};
+	
 	return 0;
 }

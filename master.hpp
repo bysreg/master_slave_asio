@@ -6,7 +6,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <deque>
 #include <iostream>
-#include <set>
+#include <vector>
 
 #include "message.hpp"
 
@@ -79,6 +79,17 @@ public:
 	void send_all(const std::string& str);
 	void send_all(MessagePtr msg);
 
+	template<typename T>
+	void send(int conn_idx, const T& value) {
+		MessagePtr msg =  std::make_shared<Message>(sizeof(T));
+
+		msg->set_body_length(sizeof(T));
+		std::memcpy(msg->body(), &value, sizeof(T));
+		msg->encode_header();
+		send(conn_idx, msg);			
+	}
+	void send(int conn_idx, MessagePtr msg);
+
 	int get_connections_count() const;
 
 	// callbacks
@@ -102,5 +113,5 @@ private:
 	tcp::acceptor acceptor;
 	tcp::socket socket;
 
-	std::set<ConnectionPtr> connections;
+	std::vector<ConnectionPtr> connections;
 };
