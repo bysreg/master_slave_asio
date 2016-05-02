@@ -111,7 +111,7 @@ void Connection::do_read_body()
 				// std::cout.write(read_msg.body(), read_msg.body_length());
 				// std::cout << "\n";
 				// std::cout<<"receiving something : ";
-				master.on_message_received(read_msg);
+				master.on_message_received(this->idx, read_msg);
 				do_read_header();
 			}
 			else
@@ -153,6 +153,7 @@ void Master::do_accept()
 			if (!ec)
 			{
 				auto conn_ptr = std::make_shared<Connection>(std::move(socket), *this);
+				conn_ptr->idx = this->connections.size();
 				this->connections.push_back(conn_ptr);
 
 				conn_ptr->start();
@@ -189,7 +190,7 @@ int Master::get_connections_count() const
 	return connections.size();
 }
 
-void Master::set_on_message_received(std::function<void(const Message& message)> const& cb)
+void Master::set_on_message_received(std::function<void(int conn_idx, const Message& message)> const& cb)
 {
 	on_message_received = cb;
 }
@@ -230,7 +231,7 @@ int main(int argc, char* argv[])
 
 	Master& master = Master::start();  		
 	master.set_on_message_received(
-		[&master](const Message& msg) {				
+		[&master](int conn_idx, const Message& msg) {				
 			std::cout.write(msg.body(), msg.body_length());
 			std::cout << "\n";
 
@@ -263,6 +264,6 @@ int main(int argc, char* argv[])
 		t.a = 'x';t.b = 'y';t.c = 'z';
 		master.send_all(t);
 	};
-	
+
 	return 0;
 }

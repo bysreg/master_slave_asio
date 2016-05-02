@@ -38,6 +38,8 @@ public:
 	void send(const std::string& str);
 	void send(MessagePtr msg); // connection will responsible for t
 
+	int idx;
+
 private:
 
 	void do_read_header();
@@ -93,7 +95,7 @@ public:
 	int get_connections_count() const;
 
 	// callbacks
-	void set_on_message_received(std::function<void(const Message&)> const& cb);
+	void set_on_message_received(std::function<void(int conn_idx, const Message&)> const& cb);
 	void set_on_connection_started(std::function<void(Connection&)> const& cb);
 
 private:
@@ -105,7 +107,7 @@ private:
 	void operator=(Master const& other) = delete;
 
 	// callbacks
-	std::function<void(const Message&)> on_message_received;
+	std::function<void(int conn_idx, const Message&)> on_message_received;
 	std::function<void(Connection&)> on_connection_started;
 
 	void do_accept();
